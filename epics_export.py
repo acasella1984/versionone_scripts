@@ -24,12 +24,38 @@ def printCount(filter, count) :
 	elif filter == "Not Required":
 		print("Architecture not required: %d" % count)
 	elif filter == "Re-review":
-    		print("Re-review: %d" % count)
+		print("Re-review: %d" % count)
+	elif filter == "All":
+		print("All Stories: %d" % count)
 	else:
 		print("Number of stories = %d" % count)
 
 def query(scope, filter, debug=False):
-    q = """
+    if filter == "All":
+        q = """
+{
+  "from": "Epic",
+  "select": [
+    "ID.Name",
+    "Name",
+    "Category.Name",
+    "Number",
+    "Custom_TSAStatus2.Name",
+    "Custom_TSADate",
+    "Custom_ArchAcceptReject"
+  ],
+  "sort": [
+    "+Order"
+  ],
+  "where": {
+    "Scope.Name": "%s",
+    "Category.Name": "Big Story"
+  }
+}
+""" % (scope)
+
+    else:
+        q = """
 {
   "from": "Epic",
   "select": [
@@ -57,6 +83,7 @@ def query(scope, filter, debug=False):
     url = args.endpoint + '/query.v1'
     req = requests.post(url, data=q, headers=headers)
     stories = req.json()[0]
+    #print (stories)
     i = 0
     printCount(filter, len(stories))
     for i in range(len(stories)):
@@ -71,6 +98,15 @@ def query(scope, filter, debug=False):
             else:
                 ds = "TBD"
             print("%s [%s] - Target %s" % (s['Name'], s['Number'], ds))
+        elif filter == "All":
+            accept_reject = s['Custom_ArchAcceptReject']
+            if accept_reject :
+                if accept_reject['_oid'] == oid_reject :
+                    print("%s [%s] %s Rejected" % (s['Name'], s['Number'], s['Custom_TSAStatus2.Name']))
+                else:
+                    print("%s [%s] %s" % (s['Name'], s['Number'], s['Custom_TSAStatus2.Name']))
+            else :
+                print("%s [%s] %s" % (s['Name'], s['Number'], s['Custom_TSAStatus2.Name']))
         else:
             accept_reject = s['Custom_ArchAcceptReject']
             if accept_reject :
